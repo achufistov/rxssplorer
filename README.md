@@ -15,6 +15,7 @@
    * [katana](#katana)
    * [waybackurls](#waybackurls)
    * [qsreplace](#waybackurls)
+   * [uro](#uro)
 5. [Installation](#installation)
 
 ## Introduction
@@ -82,6 +83,11 @@ If you want to understand the operation of each tool from this zoo, you can do i
 5. [katana](https://github.com/projectdiscovery/katana)
 6. [waybackurls](https://github.com/tomnomnom/waybackurls)
 7. [qsreplace](https://github.com/tomnomnom/qsreplace)
+8. [uro](https://github.com/s0md3v/uro)
 
 ## Installation
-The section will be filled in after the installation script is ready :)
+1. cd to rxssplorer directory;
+2. Install requirements: ``` pip3 install -r requirements.txt ```
+3. Install each tool listed in the paragraph above
+
+P.S. an installation script will be here soon
