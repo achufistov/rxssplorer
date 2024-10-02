@@ -21,6 +21,8 @@ def test_endpoints(payload, payload_file=None, output_format="txt", headers="", 
     if payload_file:
         with open(payload_file, "r") as f:
             payloads = [line.strip() for line in f.readlines()]
+        airixss_results = []
+        kxss_results = []
         for payload in payloads:
             command1 = f"cat filtered_endpoints.txt | qsreplace '{payload}' | airixss -payload '{payload}'"
             if headers:
@@ -33,20 +35,6 @@ def test_endpoints(payload, payload_file=None, output_format="txt", headers="", 
             command2 = f"cat filtered_endpoints.txt | qsreplace '{payload}' | kxss"
             subprocess.run(command2, shell=True, stdout=open("kxss_output.txt", "w"))
 
-            command3 = "cat filtered_endpoints.txt | gf xss >> xss_params.txt"
-            subprocess.run(command3, shell=True)
-
-            command4 = "cat xss_params.txt | Gxss -p khXSS -o xss_params_reflected.txt"
-            subprocess.run(command4, shell=True)
-
-            command5 = "dalfox file xss_params_reflected.txt -o results.txt"
-            if headers:
-                headers_list = [header.strip() for header in headers.split(",")]
-                for header in headers_list:
-                    key, value = header.split(":")
-                    command5 += f" -H '{key.strip()}: {value.strip()}'"
-            subprocess.run(command5, shell=True)
-
             with open("airixss_output.txt", "r") as f:
                 airixss_output = f.read()
                 
@@ -56,35 +44,79 @@ def test_endpoints(payload, payload_file=None, output_format="txt", headers="", 
             with open("kxss_output.txt", "r") as f:
                 kxss_output = f.read()
 
-            if output_format == "txt":
-                with open("results.txt", "a") as f:
-                    f.write("\nAirixss Results:\n")
-                    f.write(airixss_output)
+            airixss_results.append(airixss_output)
+            kxss_results.append(kxss_output)
+
+        if output_format == "txt":
+            with file as f:
+                f.write("\nAirixss Results:\n")
+                for result in airixss_results:
+                    f.write(result)
                     f.write("\n")
-                    f.write("Kxss Results:\n ")
-                    f.write(kxss_output)
-            elif output_format == "html":
-                with open("results.html", "w") as f:
-                    f.write("<html><head><style>")
-                    f.write("body { font-family: Arial, sans-serif; }")
-                    f.write("h2 { color: #00698f; }")
-                    f.write("pre { background-color: #f0f0f0; padding: 10px; border: 1px solid #ddd; }")
-                    f.write("</style></head><body>")
-                    f.write("<h2>Airixss Results:</h2>")
-                    f.write("<pre>")
-                    f.write(airixss_output)
-                    f.write("</pre>")
-                    f.write("<h2>Kxss Results:</h2>")
-                    f.write("<pre>")
-                    f.write(kxss_output)
-                    f.write("</pre>")
-                    f.write("<h2>Dalfox Results:</h2>")
-                    f.write("<pre>")
-                    with open("results.txt", "r") as dalfox_file:
-                        dalfox_output = dalfox_file.read()
-                    f.write(dalfox_output)
-                    f.write("</pre>")
-                    f.write("</body></html>")
+                f.write("Kxss Results:\n")
+                for result in kxss_results:
+                    f.write(result)
+                    f.write("\n")
+        elif output_format == "html":
+            with file as f:
+                f.write("<!DOCTYPE html>\n")
+                f.write("<html>\n")
+                f.write("  <head>\n")
+                f.write("    <style>\n")
+                f.write("      body { font-family: Arial, sans-serif; background-color: #f9f9f9; }\n")
+                f.write("      h2 { color: #ff0000; }\n")
+                f.write("      ul { list-style: none; padding: 0; margin: 0; }\n")
+                f.write("      li { padding: 10px; border-bottom: 1px solid #ccc; }\n")
+                f.write("      li:last-child { border-bottom: none; }\n")
+                f.write("      .success { color: #2ecc71; }\n")
+                f.write("      .error { color: #e74c3c; }\n")
+                f.write("    </style>\n")
+                f.write("  </head>\n")
+                f.write("  <body>\n")
+
+                if payload_file:
+                    f.write("    <h2>Airixss Results:</h2>\n")
+                    f.write("    <ul>\n")
+                    for result in airixss_results:
+                        for line in result.split('\n'):
+                            if line:
+                                if "Vulnerable" in line:
+                                    f.write(f"      <li class='success'>{line}</li>\n")
+                                else:
+                                    f.write(f"      <li>{line}</li>\n")
+                    f.write("    </ul>\n")
+                    f.write("    <h2>Kxss Results:</h2>\n")
+                    f.write("    <ul>\n")
+                    for result in kxss_results:
+                        for line in result.split('\n'):
+                            if line:
+                                if "Vulnerable" in line:
+                                    f.write(f"      <li class='success'>{line}</li>\n")
+                                else:
+                                    f.write(f"      <li>{line}</li>\n")
+                    f.write("    </ul>\n")
+                else:
+                    f.write("    <h2>Airixss Results:</h2>\n")
+                    f.write("    <ul>\n")
+                    for line in airixss_output.split('\n'):
+                        if line:
+                            if "Vulnerable" in line:
+                                f.write(f"      <li class='success'>{line}</li>\n")
+                            else:
+                                f.write(f"      <li>{line}</li>\n")
+                    f.write("    </ul>\n")
+                    f.write("    <h2>Kxss Results:</h2>\n")
+                    f.write("    <ul>\n")
+                    for line in kxss_output.split('\n'):
+                        if line:
+                            if "Vulnerable" in line:
+                                f.write(f"      <li class='success'>{line}</li>\n")
+                            else:
+                                f.write(f"      <li>{line}</li>\n")
+                    f.write("    </ul>\n")
+
+                f.write("  </body>\n")
+                f.write("</html>\n")
     else:
         command1 = f"cat filtered_endpoints.txt | qsreplace '{payload}' | airixss -payload '{payload}'"
         if headers:
@@ -97,20 +129,6 @@ def test_endpoints(payload, payload_file=None, output_format="txt", headers="", 
         command2 = f"cat filtered_endpoints.txt | qsreplace '{payload}' | kxss"
         subprocess.run(command2, shell=True, stdout=open("kxss_output.txt", "w"))
 
-        command3 = "cat filtered_endpoints.txt | gf xss >> xss_params.txt"
-        subprocess.run(command3, shell=True)
-
-        command4 = "cat xss_params.txt | Gxss -p khXSS -o xss_params_reflected.txt"
-        subprocess.run(command4, shell=True)
-
-        command5 = "dalfox file xss_params_reflected.txt -o results.txt"
-        if headers:
-            headers_list = [header.strip() for header in headers.split(",")]
-            for header in headers_list:
-                key, value = header.split(":")
-                command5 += f" -H '{key.strip()}: {value.strip()}'"
-        subprocess.run(command5, shell=True)
-
         with open("airixss_output.txt", "r") as f:
             airixss_output = f.read()
             
@@ -121,42 +139,76 @@ def test_endpoints(payload, payload_file=None, output_format="txt", headers="", 
             kxss_output = f.read()
 
         if output_format == "txt":
-            with open("results.txt", "a") as f:
+            with file as f:
                 f.write("\nAirixss Results:\n")
                 f.write(airixss_output)
                 f.write("\n")
                 f.write("Kxss Results:\n")
                 f.write(kxss_output)
+                f.write("\n")
         elif output_format == "html":
-            with open("results.html", "w") as f:
-                f.write("<html><head><style>")
-                f.write("body { font-family: Arial, sans-serif; }")
-                f.write("h2 { color: #00698f; }")
-                f.write("pre { background-color: #f0f0f0; padding: 10px; border: 1px solid #ddd; }")
-                f.write("</style></head><body>")
-                f.write("<h2>Airixss Results:</h2>")
-                f.write("<pre>")
-                f.write(airixss_output)
-                f.write("</pre>")
-                f.write("<h2>Kxss Results:</h2>")
-                f.write("<pre>")
-                f.write(kxss_output)
-                f.write("</pre>")
-                f.write("<h2>Dalfox Results:</h2>")
-                f.write("<pre>")
-                with open("results.txt", "r") as dalfox_file:
-                    dalfox_output = dalfox_file.read()
-                f.write(dalfox_output)
-                f.write("</pre>")
-                f.write("</body></html>")
+            with file as f:
+                f.write("<!DOCTYPE html>\n")
+                f.write("<html>\n")
+                f.write("  <head>\n")
+                f.write("    <style>\n")
+                f.write("      body { font-family: Arial, sans-serif; background-color: #f9f9f9; }\n")
+                f.write("      h2 { color: #ff0000; }\n")
+                f.write("      ul { list-style: none; padding: 0; margin: 0; }\n")
+                f.write("      li { padding: 10px; border-bottom: 1px solid #ccc; }\n")
+                f.write("      li:last-child { border-bottom: none; }\n")
+                f.write("      .success { color: #2ecc71; }\n")
+                f.write("      .error { color: #e74c3c; }\n")
+                f.write("    </style>\n")
+                f.write("  </head>\n")
+                f.write("  <body>\n")
+
+                if payload_file:
+                    f.write("    <h2>Airixss Results:</h2>\n")
+                    f.write("    <ul>\n")
+                    for result in airixss_results:
+                        for line in result.split('\n'):
+                            if line:
+                                if "Vulnerable" in line:
+                                    f.write(f"      <li class='success'>{line}</li>\n")
+                                else:
+                                    f.write(f"      <li>{line}</li>\n")
+                    f.write("    </ul>\n")
+                    f.write("    <h2>Kxss Results:</h2>\n")
+                    f.write("    <ul>\n")
+                    for result in kxss_results:
+                        for line in result.split('\n'):
+                            if line:
+                                if "Vulnerable" in line:
+                                    f.write(f"      <li class='success'>{line}</li>\n")
+                                else:
+                                    f.write(f"      <li>{line}</li>\n")
+                    f.write("    </ul>\n")
+                else:
+                    f.write("    <h2>Airixss Results:</h2>\n")
+                    f.write("    <ul>\n")
+                    for line in airixss_output.split('\n'):
+                        if line:
+                            if "Vulnerable" in line:
+                                f.write(f"      <li class='success'>{line}</li>\n")
+                            else:
+                                f.write(f"      <li>{line}</li>\n")
+                    f.write("    </ul>\n")
+                    f.write("    <h2>Kxss Results:</h2>\n")
+                    f.write("    <ul>\n")
+                    for line in kxss_output.split('\n'):
+                        if line:
+                            if "Vulnerable" in line:
+                                f.write(f"      <li class='success'>{line}</li>\n")
+                            else:
+                                f.write(f"      <li>{line}</li>\n")
+                    f.write("    </ul>\n")
+
+                f.write("  </body>\n")
+                f.write("</html>\n")
 
 def clean_up_files():
-    try:
-        os.remove("endpoints.txt")
-        os.remove("filtered_endpoints.txt")
-        os.remove("airixss_output.txt")
-        os.remove("kxss_output.txt")
-        os.remove("xss_params.txt")
-        os.remove("xss_params_reflected.txt")
-    except FileNotFoundError:
-        pass
+    files_to_delete = ["endpoints.txt", "filtered_endpoints.txt", "airixss_output.txt", "kxss_output.txt"]
+    for file in files_to_delete:
+        if os.path.exists(file):
+            os.remove(file)
